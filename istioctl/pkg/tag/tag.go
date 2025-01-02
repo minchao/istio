@@ -54,6 +54,7 @@ revision tag, use 'kubectl label namespace <NAMESPACE> istio.io/rev=%s'
 `
 	webhookNameHelpStr          = "Name to use for a revision tag's mutating webhook configuration."
 	autoInjectNamespacesHelpStr = "If set to true, the sidecars should be automatically injected into all namespaces by default"
+	reinvocationPolicyHelpStr   = "Reinvocation policy for the sidecar injector webhook. Valid values are 'Never', 'IfNeeded'."
 )
 
 // options for CLI
@@ -65,6 +66,7 @@ var (
 	skipConfirmation     = false
 	webhookName          = ""
 	autoInjectNamespaces = false
+	reinvocationPolicy   = "Never"
 	outputFormat         = util.TableFormat
 )
 
@@ -157,6 +159,7 @@ injection labels.`,
 	cmd.PersistentFlags().StringVarP(&revision, "revision", "r", "", revisionHelpStr)
 	cmd.PersistentFlags().StringVarP(&webhookName, "webhook-name", "", "", webhookNameHelpStr)
 	cmd.PersistentFlags().BoolVar(&autoInjectNamespaces, "auto-inject-namespaces", false, autoInjectNamespacesHelpStr)
+	cmd.PersistentFlags().StringVarP(&reinvocationPolicy, "reinvocation-policy", "", "Never", reinvocationPolicyHelpStr)
 	_ = cmd.MarkPersistentFlagRequired("revision")
 
 	return cmd
@@ -205,6 +208,7 @@ injection labels.`,
 	cmd.PersistentFlags().StringVarP(&revision, "revision", "r", "", revisionHelpStr)
 	cmd.PersistentFlags().StringVarP(&webhookName, "webhook-name", "", "", webhookNameHelpStr)
 	cmd.PersistentFlags().BoolVar(&autoInjectNamespaces, "auto-inject-namespaces", false, autoInjectNamespacesHelpStr)
+	cmd.PersistentFlags().StringVarP(&reinvocationPolicy, "reinvocation-policy", "", "Never", reinvocationPolicyHelpStr)
 	_ = cmd.MarkPersistentFlagRequired("revision")
 
 	return cmd
@@ -283,6 +287,7 @@ func setTag(ctx context.Context, kubeClient kube.CLIClient, tagName, revision, i
 		Generate:             generate,
 		Overwrite:            overwrite,
 		AutoInjectNamespaces: autoInjectNamespaces,
+		ReinvocationPolicy:   reinvocationPolicy,
 		UserManaged:          true,
 	}
 	tagWhYAML, err := Generate(ctx, kubeClient, opts, istioNS)

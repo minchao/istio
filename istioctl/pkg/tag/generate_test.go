@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	admitv1 "k8s.io/api/admissionregistration/v1"
@@ -399,4 +400,42 @@ func TestGenerateOptions(t *testing.T) {
 			t.Errorf("expected diff between webhooks, got none")
 		}
 	})
+}
+
+func TestGenerateWithReinvocationPolicyOption(t *testing.T) {
+	tcs := []struct {
+		reinvocationPolicy string
+		expected           string
+	}{
+		{
+			reinvocationPolicy: "",
+			expected:           "Never",
+		},
+		{
+			reinvocationPolicy: "Never",
+			expected:           "Never",
+		},
+		{
+			reinvocationPolicy: "IfNeeded",
+			expected:           "IfNeeded",
+		},
+	}
+	for _, tc := range tcs {
+		defaultWh := defaultRevisionCanonicalWebhook.DeepCopy()
+		fakeClient := kube.NewFakeClient(defaultWh)
+
+		opts := &GenerateOptions{
+			Generate:           true,
+			Tag:                "default",
+			Revision:           "default",
+			ReinvocationPolicy: tc.reinvocationPolicy,
+		}
+
+		tagWhYAML, err := Generate(context.TODO(), fakeClient, opts, "istio-system")
+		assert.NoError(t, err)
+
+		if !strings.Contains(tagWhYAML, fmt.Sprintf("reinvocationPolicy: %s", tc.expected)) {
+			t.Errorf("expected reinvocation policy %s to be set", tc.expected)
+		}
+	}
 }

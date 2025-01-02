@@ -78,6 +78,8 @@ type GenerateOptions struct {
 	Overwrite bool
 	// AutoInjectNamespaces controls, if the sidecars should be injected into all namespaces by default.
 	AutoInjectNamespaces bool
+	// ReinvocationPolicy is the reinvocation policy to use for the webhook.
+	ReinvocationPolicy string
 	// CustomLabels are labels to add to the generated webhook.
 	CustomLabels map[string]string
 	// UserManaged indicates whether the revision tag is user managed.
@@ -280,6 +282,9 @@ func generateMutatingWebhook(config *tagWebhookConfig, opts *GenerateOptions) (s
 		"values.sidecarInjectorWebhook.enableNamespacesByDefault=" + strconv.FormatBool(opts.AutoInjectNamespaces),
 		"values.istiodRemote.injectionURL=" + config.URL,
 		"values.global.istioNamespace=" + config.IstioNamespace,
+	}
+	if len(opts.ReinvocationPolicy) > 0 {
+		flags = append(flags, "values.sidecarInjectorWebhook.reinvocationPolicy="+opts.ReinvocationPolicy)
 	}
 	mfs, _, err := render.GenerateManifest(nil, flags, false, nil, nil)
 	if err != nil {

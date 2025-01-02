@@ -46,6 +46,7 @@ func WebhooksToDeploy(iop values.Map, clt kube.Client, dryRun bool) ([]manifest.
 	}
 	rev := ptr.NonEmptyOrDefault(iop.GetPathString("spec.values.revision"), "default")
 	autoInject := iop.GetPathBool("spec.values.sidecarInjectorWebhook.enableNamespacesByDefault")
+	reinvocationPolicy := iop.GetPathString("spec.values.sidecarInjectorWebhook.reinvocationPolicy")
 
 	ignorePruneLabel := map[string]string{
 		manifest.OwningResourceNotPruned: "true",
@@ -56,6 +57,7 @@ func WebhooksToDeploy(iop values.Map, clt kube.Client, dryRun bool) ([]manifest.
 		Revision:             rev,
 		Overwrite:            true,
 		AutoInjectNamespaces: autoInject,
+		ReinvocationPolicy:   reinvocationPolicy,
 		CustomLabels:         ignorePruneLabel,
 		Generate:             dryRun,
 	}
