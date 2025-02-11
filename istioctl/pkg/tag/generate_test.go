@@ -119,6 +119,7 @@ var (
 	}
 	remoteValidationURL                                           = "https://random.host.com/validate"
 	ifNeededReinvocationPolicy                                    = admitv1.IfNeededReinvocationPolicy
+	neverReinvocationPolicy                                       = admitv1.NeverReinvocationPolicy
 	defaultRevisionCanonicalWebhookWithIfNeededReinvocationPolicy = admitv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "istio-sidecar-injector",
@@ -146,6 +147,36 @@ var (
 					CABundle: []byte("ca"),
 				},
 				ReinvocationPolicy: &ifNeededReinvocationPolicy,
+			},
+		},
+	}
+	defaultRevisionCanonicalWebhookWithNeverReinvocationPolicy = admitv1.MutatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "istio-sidecar-injector",
+			Labels: map[string]string{label.IoIstioRev.Name: "default"},
+		},
+		Webhooks: []admitv1.MutatingWebhook{
+			{
+				Name: fmt.Sprintf("namespace.%s", istioInjectionWebhookSuffix),
+				ClientConfig: admitv1.WebhookClientConfig{
+					Service: &admitv1.ServiceReference{
+						Namespace: "default",
+						Name:      "istiod",
+					},
+					CABundle: []byte("ca"),
+				},
+				ReinvocationPolicy: &neverReinvocationPolicy,
+			},
+			{
+				Name: fmt.Sprintf("object.%s", istioInjectionWebhookSuffix),
+				ClientConfig: admitv1.WebhookClientConfig{
+					Service: &admitv1.ServiceReference{
+						Namespace: "default",
+						Name:      "istiod",
+					},
+					CABundle: []byte("ca"),
+				},
+				ReinvocationPolicy: &neverReinvocationPolicy,
 			},
 		},
 	}
@@ -303,7 +334,7 @@ func TestGenerateMutatingWebhook(t *testing.T) {
 			whURL:                "",
 			whSVC:                "istiod-revision",
 			whCA:                 "ca",
-			whReinvocationPolicy: string(admitv1.NeverReinvocationPolicy),
+			whReinvocationPolicy: string(admitv1.IfNeededReinvocationPolicy),
 			numWebhooks:          2,
 		},
 		{
@@ -313,7 +344,7 @@ func TestGenerateMutatingWebhook(t *testing.T) {
 			whURL:                remoteInjectionURL,
 			whSVC:                "",
 			whCA:                 "ca",
-			whReinvocationPolicy: string(admitv1.NeverReinvocationPolicy),
+			whReinvocationPolicy: string(admitv1.IfNeededReinvocationPolicy),
 			numWebhooks:          2,
 		},
 		{
@@ -323,7 +354,7 @@ func TestGenerateMutatingWebhook(t *testing.T) {
 			whURL:                "",
 			whSVC:                "istiod",
 			whCA:                 "ca",
-			whReinvocationPolicy: string(admitv1.NeverReinvocationPolicy),
+			whReinvocationPolicy: string(admitv1.IfNeededReinvocationPolicy),
 			numWebhooks:          2,
 		},
 		{
@@ -333,7 +364,7 @@ func TestGenerateMutatingWebhook(t *testing.T) {
 			whURL:                "",
 			whSVC:                "istiod",
 			whCA:                 "ca",
-			whReinvocationPolicy: string(admitv1.NeverReinvocationPolicy),
+			whReinvocationPolicy: string(admitv1.IfNeededReinvocationPolicy),
 			numWebhooks:          4,
 		},
 		{
@@ -344,6 +375,16 @@ func TestGenerateMutatingWebhook(t *testing.T) {
 			whSVC:                "istiod",
 			whCA:                 "ca",
 			whReinvocationPolicy: string(admitv1.IfNeededReinvocationPolicy),
+			numWebhooks:          4,
+		},
+		{
+			name:                 "webhook-pointing-to-default-revision-with-never-reinvocation-policy",
+			webhook:              defaultRevisionCanonicalWebhookWithNeverReinvocationPolicy,
+			tagName:              "default",
+			whURL:                "",
+			whSVC:                "istiod",
+			whCA:                 "ca",
+			whReinvocationPolicy: string(admitv1.NeverReinvocationPolicy),
 			numWebhooks:          4,
 		},
 	}
